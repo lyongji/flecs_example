@@ -1,61 +1,54 @@
-#include <run_callback.h>
 #include <iostream>
+#include <run_callback.h>
 
 // This example shows how to use the run callback, which provides more direct
 // control over the iteration of a query. It also makes it easier to run code
 // before and after the iteration.
 
-struct Position { 
-    double x, y;
+struct 位置 {
+  double x, y;
 };
 
-struct Velocity { 
-    double x, y;
+struct 速度 {
+  double x, y;
 };
 
 int main(int, char *[]) {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    // Create a query for Position, Velocity.
-    flecs::query<Position, const Velocity> q = 
-        ecs.query<Position, const Velocity>();
+  // Create a query for Position, Velocity.
+  flecs::query<位置, const 速度> q = ecs.query<位置, const 速度>();
 
-    // Create a few test entities for a Position, Velocity query
-    ecs.entity("e1")
-        .set<Position>({10, 20})
-        .set<Velocity>({1, 2});
+  // Create a few test entities for a Position, Velocity query
+  ecs.entity("e1").set<位置>({10, 20}).set<速度>({1, 2});
 
-    ecs.entity("e2")
-        .set<Position>({10, 20})
-        .set<Velocity>({3, 4});
+  ecs.entity("e2").set<位置>({10, 20}).set<速度>({3, 4});
 
-    // This entity will not match as it does not have Position, Velocity
-    ecs.entity("e3")
-        .set<Position>({10, 20});
+  // This entity will not match as it does not have Position, Velocity
+  ecs.entity("e3").set<位置>({10, 20});
 
-    // Iterate the query
-    q.run([](flecs::iter& it) {
-        std::cout << "Move begin\n";
+  // Iterate the query
+  q.run([](flecs::iter &it) {
+    std::cout << "Move begin\n";
 
-        while (it.next()) {
-            auto p = it.field<Position>(0);
-            auto v = it.field<const Velocity>(1);
+    while (it.next()) {
+      auto p = it.field<位置>(0);
+      auto v = it.field<const 速度>(1);
 
-            for (auto i : it) {
-                flecs::entity e = it.entity(i);
-                p[i].x += v[i].x;
-                p[i].y += v[i].y;
-                std::cout << e.name() 
-                            << ": {" << p[i].x << ", " << p[i].y << "}\n";
-            }
-        }
+      for (auto i : it) {
+        flecs::entity e = it.entity(i);
+        p[i].x += v[i].x;
+        p[i].y += v[i].y;
+        std::cout << e.name() << ": {" << p[i].x << ", " << p[i].y << "}\n";
+      }
+    }
 
-        std::cout << "Move end\n";
-    });
+    std::cout << "Move end\n";
+  });
 
-    // Output
-    //  Move begin
-    //  e1: {11, 22}
-    //  e2: {13, 24}
-    //  Move end
+  // Output
+  //  Move begin
+  //  e1: {11, 22}
+  //  e2: {13, 24}
+  //  Move end
 }

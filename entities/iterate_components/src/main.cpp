@@ -1,98 +1,97 @@
-#include <iterate_components.h>
 #include <iostream>
+#include <iterate_components.h>
+#include <print>
 
-// Ordinary components
-struct Position {
-    double x, y;
+// 普通组件
+struct 位置 {
+  double x, y;
 };
 
-struct Velocity {
-    double x, y;
+struct 速度 {
+  double x, y;
 };
 
-// Tag
-struct Human { };
+// 标签
+struct 人类 {};
 
-// Two tags used to create a pair
-struct Eats { };
-struct Apples { };
+// 用于创建对的两个标签
+struct 吃 {};
+struct 苹果 {};
 
-void iterate_components(flecs::entity e) {
-    // 1. The easiest way to print the components is to use type::str
-    std::cout << e.type().str() << "\n\n";
+void 迭代组件(flecs::entity e) {
+  // 1. 打印组件的最简单方法是使用 type::str
+  // std::cout << e.type().str() << "\n\n";
+  std::println("{}\n", e.type().str().c_str());
+  // 2. 要获取单个组件 id，请使用 entity::each
+  int32_t i = 0;
+  e.each([&](flecs::id id) { std::println("{}: {}", i++, id.str().c_str()); });
+  std::println("");
 
-    // 2. To get individual component ids, use entity::each
-    int32_t i = 0;
-    e.each([&](flecs::id id) {
-        std::cout << i++ << ": " << id.str() << "\n";
-    });
-    std::cout << "\n";
+  // 3. 我们也可以用自己的方式检查并打印
+  // id。这有点复杂，因为我们需要处理可以编码在 id
+  // 中的边缘情况，但这提供了最大的灵活性。
+  i = 0;
+  e.each([&](flecs::id id) {
+    std::cout << i++ << ": ";
 
-    // 3. we can also inspect and print the ids in our own way. This is a
-    // bit more complicated as we need to handle the edge cases of what can be
-    // encoded in an id, but provides the most flexibility.
-    i = 0;
-    e.each([&](flecs::id id) {
-        std::cout << i++ << ": ";
+    if (id.is_pair()) {
+      // 如果 id 是一个对，提取并打印对的两部分
+      flecs::entity rel = id.first();
+      flecs::entity tgt = id.second();
+      std::println("关系: {}, 目标: {}", rel.name().c_str(),
+                   tgt.name().c_str());
+    } else {
+      // Id 包含一个常规实体。在打印前去掉角色。
+      flecs::entity comp = id.entity();
+      std::print("实体: {}", comp.name().c_str());
+    }
+    std::println("");
+  });
 
-        if (id.is_pair()) {
-            // If id is a pair, extract & print both parts of the pair
-            flecs::entity rel = id.first();
-            flecs::entity tgt = id.second();
-            std::cout << "rel: " << rel.name() << ", " << "tgt: " << tgt.name();
-        } else {
-            // Id contains a regular entity. Strip role before printing.
-            flecs::entity comp = id.entity();
-            std::cout << "entity: " << comp.name();
-        }
-
-        std::cout << "\n";
-    });
-
-    std::cout << "\n\n";
+  std::println("\n");
 }
 
 int main(int, char *[]) {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    flecs::entity bob = ecs.entity()
-        .set<Position>({10, 20})
-        .set<Velocity>({1, 1})
-        .add<Human>()
-        .add<Eats, Apples>();
+  flecs::entity bob = ecs.entity()
+                          .set<位置>({10, 20})
+                          .set<速度>({1, 1})
+                          .add<人类>()
+                          .add<吃, 苹果>();
 
-    std::cout << "Bob's components:\n";
-    iterate_components(bob);
+  std::println("角色组件构成: ");
+  迭代组件(bob);
 
-    // We can use the same function to iterate the components of a component
-    std::cout << "Position's components:\n";
-    iterate_components(ecs.component<Position>());
+  // 我们可以使用相同的函数来遍历组件的组件
+  std::println("位置组件构成: ");
+  迭代组件(ecs.component<位置>());
 }
 
-// Output:
+// 输出:
 
 // Bob's components:
-// Position, Velocity, Human, (Eats,Apples)
-// 
+// Position, Velocity, Human, (Eats,苹果)
+//
 // 0: Position
 // 1: Velocity
 // 2: Human
-// 3: (Eats,Apples)
-// 
+// 3: (Eats,苹果)
+//
 // 0: entity: Position
 // 1: entity: Velocity
 // 2: entity: Human
-// 3: rel: Eats, tgt: Apples
-// 
-// 
+// 3: rel: Eats, tgt: 苹果
+//
+//
 // Position's components:
 // Component, (Identifier,Name), (Identifier,Symbol), (OnDelete,Panic)
-// 
+//
 // 0: Component
 // 1: (Identifier,Name)
 // 2: (Identifier,Symbol)
 // 3: (OnDelete,Panic)
-// 
+//
 // 0: entity: Component
 // 1: rel: Identifier, tgt: Name
 // 2: rel: Identifier, tgt: Symbol

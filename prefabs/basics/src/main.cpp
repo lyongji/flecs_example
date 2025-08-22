@@ -6,56 +6,55 @@
 // queries and systems.
 //
 // Prefab instances are entities that have an IsA relationship to the prefab.
-// The IsA relationship causes instances to inherit the components from the 
-// prefab. By default all instances for a prefab share its components. 
+// The IsA relationship causes instances to inherit the components from the
+// prefab. By default all instances for a prefab share its components.
 //
 // Inherited components save memory as they only need to be stored once for all
 // prefab instances. They also speed up the creation of prefabs, as inherited
 // components don't need to be copied to the instances.
 //
-// To get a private copy of a component, an instance can add it which is called 
+// To get a private copy of a component, an instance can add it which is called
 // an override. Overrides can be manual (by using add) or automatic (see the
 // auto_override example).
 //
 // If a prefab has children, adding the IsA relationship instantiates the prefab
 // children for the instance (see hierarchy example).
 
-struct Defense {
-    double value;
+struct 防御 {
+  double value;
 };
 
 int main() {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    // Make Defense component inheritable. By default components are copied from
-    // the instance to the prefab. An inherited component is only stored on the
-    // prefab, and is shared across all instances.
-    ecs.component<Defense>().add(flecs::OnInstantiate, flecs::Inherit);
+  // Make Defense component inheritable. By default components are copied from
+  // the instance to the prefab. An inherited component is only stored on the
+  // prefab, and is shared across all instances.
+  ecs.component<防御>().add(flecs::OnInstantiate, flecs::Inherit);
 
-    // Create a SpaceShip prefab with a Defense component.
-    flecs::entity SpaceShip = ecs.prefab("SpaceShip")
-        .set<Defense>({ 50 });
+  // Create a SpaceShip prefab with a Defense component.
+  flecs::entity SpaceShip = ecs.prefab("SpaceShip").set<防御>({50});
 
-    // Create a prefab instance
-    flecs::entity inst = ecs.entity("my_spaceship").is_a(SpaceShip);
+  // Create a prefab instance
+  flecs::entity inst = ecs.entity("my_spaceship").is_a(SpaceShip);
 
-    // Because of the IsA relationship, the instance now shares the Defense
-    // component with the prefab, and can be retrieved as a regular component:
-    const Defense& d_inst = inst.get<Defense>();
-    std::cout << "defense: " << d_inst.value << "\n";
+  // Because of the IsA relationship, the instance now shares the Defense
+  // component with the prefab, and can be retrieved as a regular component:
+  const 防御 &d_inst = inst.get<防御>();
+  std::cout << "defense: " << d_inst.value << "\n";
 
-    // Because the component is shared, changing the value on the prefab will
-    // also change the value for the instance:
-    SpaceShip.set<Defense>({ 100 });
-    std::cout << "defense after set: " << d_inst.value << "\n";
+  // Because the component is shared, changing the value on the prefab will
+  // also change the value for the instance:
+  SpaceShip.set<防御>({100});
+  std::cout << "defense after set: " << d_inst.value << "\n";
 
-    // Prefab components can be iterated like regular components:
-    ecs.each([](flecs::entity e, Defense& d) {
-        std::cout << e.path() << ": " << d.value << "\n";
-    });
+  // Prefab components can be iterated like regular components:
+  ecs.each([](flecs::entity e, 防御 &d) {
+    std::cout << e.path() << ": " << d.value << "\n";
+  });
 
-    // Output:
-    //  defense: 50
-    //  defense after set: 100
-    //  ::my_spaceship: 100
+  // Output:
+  //  defense: 50
+  //  defense after set: 100
+  //  ::my_spaceship: 100
 }

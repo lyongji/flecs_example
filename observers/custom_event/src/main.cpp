@@ -1,46 +1,38 @@
 #include <custom_event.h>
 #include <iostream>
 
-// Observers can be used to match custom events. Custom events can be emitted
-// using the ecs_emit function. This function is also used by builtin events,
-// so builtin and custom events use the same rules for matching with observers.
+// 观察者可以用来匹配自定义事件。自定义事件可以使用 ecs_emit 函数发出。
+// 该函数也用于内置事件，因此内置事件和自定义事件使用相同的规则来与观察者匹配。
 //
-// An event consists out of three pieces of data used to match with observers:
-//  - An single event kind (EcsOnAdd, EcsOnRemove, ...)
-//  - One or more event ids (Position, Velocity, ...)
-//  - A source (either an entity or a table)
+// 一个事件由三部分数据组成，用于与观察者匹配：
+//  - 单个事件类型 (EcsOnAdd, EcsOnRemove, ...)
+//  - 一个或多个事件 ID (Position, Velocity, ...)
+//  - 来源（实体或表）
 
-struct Position {
-    double x, y;
+struct 位置 {
+  double x, y;
 };
 
-// Create tag type to use as event (could also use entity)
-struct MyEvent { };
+// 创建标签类型以用作事件（也可以使用实体）
+struct MyEvent {};
 
 int main(int, char *[]) {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    // Create observer for custom event
-    ecs.observer<Position>()
-        .event<MyEvent>()
-        .each([](flecs::iter& it, size_t i, Position&) {
-            std::cout << " - " << it.event().name() << ": " 
-                << it.event_id().str() << ": "
-                << it.entity(i).name() << "\n";
-        });
+  // 为自定义事件创建观察者
+  ecs.observer<位置>().event<MyEvent>().each(
+      [](flecs::iter &it, size_t i, 位置 &) {
+        std::cout << " - " << it.event().name() << ": " << it.event_id().str()
+                  << ": " << it.entity(i).name() << "\n";
+      });
 
-    // The observer query can be matched against the entity, so make sure it
-    // has the Position component before emitting the event. This does not 
-    // trigger the observer yet.
-    flecs::entity e = ecs.entity("e")
-        .set<Position>({10, 20});
+  // 观察者查询可以与实体匹配，因此在发出事件之前确保它具有 Position 组件。
+  // 这尚未触发观察者。
+  flecs::entity e = ecs.entity("e").set<位置>({10, 20});
 
-    // Emit the custom event
-    ecs.event<MyEvent>()
-        .id<Position>()
-        .entity(e)
-        .emit();
+  // 触发自定义事件
+  ecs.event<MyEvent>().id<位置>().entity(e).emit();
 
-    // Output
-    //   - MyEvent: Position: e
+  // 输出
+  //   - MyEvent: Position: e
 }

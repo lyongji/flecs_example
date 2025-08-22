@@ -5,110 +5,99 @@
 // group_by function. A custom function makes it possible to customize how a
 // group id is calculated for a table.
 
-struct Position {
-    double x, y;
+struct 位置 {
+  double x, y;
 };
 
 // Dummy tag to put entities in different tables
-struct Tag { };
+struct Tag {};
 
 // Create a relationship to use for the group_by function. Tables will
 // be assigned the relationship target as group id
-struct Group { };
+struct Group {};
 
 // Targets for the relationship, which will be used as group ids.
-struct First { };
-struct Second { };
-struct Third { };
+struct First {};
+struct Second {};
+struct Third {};
 
-uint64_t group_by_relation(flecs::world_t *ecs, flecs::table_t *table, 
-    flecs::entity_t id, void *) 
-{
-    // Use ecs_search to find the target for the relationship in the table
-    flecs::id_t match;
-    if (ecs_search(ecs, table, flecs::id(id, flecs::Wildcard), &match) != -1) {
-        return flecs::id(ecs, match).second(); // First, Second or Third
-    }
-    return 0;
+uint64_t group_by_relation(flecs::world_t *ecs, flecs::table_t *table,
+                           flecs::entity_t id, void *) {
+  // Use ecs_search to find the target for the relationship in the table
+  flecs::id_t match;
+  if (ecs_search(ecs, table, flecs::id(id, flecs::Wildcard), &match) != -1) {
+    return flecs::id(ecs, match).second(); // First, Second or Third
+  }
+  return 0;
 }
 
 int main() {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    // Register components in order so that id for First is lower than Third
-    ecs.component<First>();
-    ecs.component<Second>();
-    ecs.component<Third>();
+  // Register components in order so that id for First is lower than Third
+  ecs.component<First>();
+  ecs.component<Second>();
+  ecs.component<Third>();
 
-    // Grouped query
-    flecs::query<Position> q = ecs.query_builder<Position>()
-        .group_by<Group>(group_by_relation)
-        .build();
+  // Grouped query
+  flecs::query<位置> q =
+      ecs.query_builder<位置>().group_by<Group>(group_by_relation).build();
 
-    // Create entities in 6 different tables with 3 group ids
-    ecs.entity().add<Group, Third>()
-        .set<Position>({1, 1});
-    ecs.entity().add<Group, Second>()
-        .set<Position>({2, 2});
-    ecs.entity().add<Group, First>()
-        .set<Position>({3, 3});
+  // Create entities in 6 different tables with 3 group ids
+  ecs.entity().add<Group, Third>().set<位置>({1, 1});
+  ecs.entity().add<Group, Second>().set<位置>({2, 2});
+  ecs.entity().add<Group, First>().set<位置>({3, 3});
 
-    ecs.entity().add<Group, Third>()
-        .set<Position>({4, 4})
-        .add<Tag>();
-    ecs.entity().add<Group, Second>()
-        .set<Position>({5, 5})
-        .add<Tag>();
-    ecs.entity().add<Group, First>()
-        .set<Position>({6, 6})
-        .add<Tag>();
+  ecs.entity().add<Group, Third>().set<位置>({4, 4}).add<Tag>();
+  ecs.entity().add<Group, Second>().set<位置>({5, 5}).add<Tag>();
+  ecs.entity().add<Group, First>().set<位置>({6, 6}).add<Tag>();
 
-    // The query cache now looks like this:
-    //  - group First:
-    //     - table [Position, (Group, First)]
-    //     - table [Position, Tag, (Group, First)]
-    //
-    //  - group Second:
-    //     - table [Position, (Group, Second)]
-    //     - table [Position, Tag, (Group, Second)]
-    //  
-    //  - group Third:
-    //     - table [Position, (Group, Third)]
-    //     - table [Position, Tag, (Group, Third)]
-    //
+  // The query cache now looks like this:
+  //  - group First:
+  //     - table [Position, (Group, First)]
+  //     - table [Position, Tag, (Group, First)]
+  //
+  //  - group Second:
+  //     - table [Position, (Group, Second)]
+  //     - table [Position, Tag, (Group, Second)]
+  //
+  //  - group Third:
+  //     - table [Position, (Group, Third)]
+  //     - table [Position, Tag, (Group, Third)]
+  //
 
-    q.run([&](flecs::iter& it) {
-        while (it.next()) {
-            auto p = it.field<Position>(0);
+  q.run([&](flecs::iter &it) {
+    while (it.next()) {
+      auto p = it.field<位置>(0);
 
-            flecs::entity group = ecs.entity(it.group_id());
-            std::cout << " - group " << group.path() << ": ["
+      flecs::entity group = ecs.entity(it.group_id());
+      std::cout << " - group " << group.path() << ": ["
                 << "table [" << it.table().str() << "]\n";
 
-            for (auto i : it) {
-                std::cout << "     {" << p[i].x << ", " << p[i].y << "}\n";
-            }
+      for (auto i : it) {
+        std::cout << "     {" << p[i].x << ", " << p[i].y << "}\n";
+      }
 
-            std::cout << "\n";
-        }
-    });
+      std::cout << "\n";
+    }
+  });
 
-    // Output:
-    //  - group ::First: table [Position, (Group,First)]
-    //      {3, 3}
-    // 
-    //  - group ::First: table [Position, Tag, (Group,First)]
-    //      {6, 6}
-    // 
-    //  - group ::Second: table [Position, (Group,Second)]
-    //      {2, 2}
-    // 
-    //  - group ::Second: table [Position, Tag, (Group,Second)]
-    //      {5, 5}
-    // 
-    //  - group ::Third: table [Position, (Group,Third)]
-    //      {1, 1}
-    // 
-    //  - group ::Third: table [Position, Tag, (Group,Third)]
-    //      {4, 4}
+  // Output:
+  //  - group ::First: table [Position, (Group,First)]
+  //      {3, 3}
+  //
+  //  - group ::First: table [Position, Tag, (Group,First)]
+  //      {6, 6}
+  //
+  //  - group ::Second: table [Position, (Group,Second)]
+  //      {2, 2}
+  //
+  //  - group ::Second: table [Position, Tag, (Group,Second)]
+  //      {5, 5}
+  //
+  //  - group ::Third: table [Position, (Group,Third)]
+  //      {1, 1}
+  //
+  //  - group ::Third: table [Position, Tag, (Group,Third)]
+  //      {4, 4}
 }

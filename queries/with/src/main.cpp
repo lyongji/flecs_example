@@ -1,44 +1,36 @@
-#include <with.h>
 #include <iostream>
+#include <with.h>
 
-struct Position { 
-    double x, y;
+struct 位置 {
+  double x, y;
 };
 
-struct Npc { };
+struct Npc {};
 
 int main(int, char *[]) {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    // Create a query for Position, Npc. By adding the Npc component using the
-    // "with" method, the component is not a part of the query type, and as a
-    // result does not become part of the function signatures of each and iter.
-    // This is useful for things like tags, which because they don't have a 
-    // value are less useful to pass to the each/iter functions as argument.
-    flecs::query<Position> q = ecs.query_builder<Position>()
-        .with<Npc>()
-        .build();
+  // Create a query for Position, Npc. By adding the Npc component using the
+  // "with" method, the component is not a part of the query type, and as a
+  // result does not become part of the function signatures of each and iter.
+  // This is useful for things like tags, which because they don't have a
+  // value are less useful to pass to the each/iter functions as argument.
+  flecs::query<位置> q = ecs.query_builder<位置>().with<Npc>().build();
 
-    // Create a few test entities for the Position, Npc query
-    ecs.entity("e1")
-        .set<Position>({10, 20})
-        .add<Npc>();
+  // Create a few test entities for the Position, Npc query
+  ecs.entity("e1").set<位置>({10, 20}).add<Npc>();
 
-    ecs.entity("e2")
-        .set<Position>({10, 20})
-        .add<Npc>();
+  ecs.entity("e2").set<位置>({10, 20}).add<Npc>();
 
-    // This entity will not match as it does not have Position, Npc
-    ecs.entity("e3")
-        .set<Position>({10, 20});
+  // This entity will not match as it does not have Position, Npc
+  ecs.entity("e3").set<位置>({10, 20});
 
+  // Note how the Npc tag is not part of the each signature
+  q.each([](flecs::entity e, 位置 &p) {
+    std::cout << e.name() << ": {" << p.x << ", " << p.y << "}\n";
+  });
 
-    // Note how the Npc tag is not part of the each signature
-    q.each([](flecs::entity e, Position& p) {
-        std::cout << e.name() << ": {" << p.x << ", " << p.y << "}\n";
-    });
-
-    // Output:
-    //  e1: {10, 20}
-    //  e2: {10, 20}
+  // Output:
+  //  e1: {10, 20}
+  //  e2: {10, 20}
 }

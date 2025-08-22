@@ -1,190 +1,202 @@
-#include <scene_management.h>
 #include <iostream>
+#include <scene_management.h>
 #include <string>
 
-// This example shows one possible way to implement scene management
-// using pipelines.
+// 这个示例展示了使用 pipelines 实现场景管理的可能方式。
+// 使用 pipelines 实现场景管理。
 
-// Scene relationships/tags
-struct ActiveScene { }; // Represents the current scene
-struct SceneRoot { }; // Parent for all entities unique to the scene
+// 场景关系/标签
+struct ActiveScene {}; // 表示当前场景
+struct SceneRoot {};   // 场景中所有唯一实体的父级
 
-// Scenes
+// 场景
 using Pipeline = flecs::entity;
-struct MenuScene { Pipeline pip; };
-struct GameScene { Pipeline pip; };
+struct MenuScene {
+  Pipeline pip;
+};
+struct GameScene {
+  Pipeline pip;
+};
 
-// Components for Example
-struct Position { float x, y; };
-struct Button { std::string text; };
-struct Character { bool alive; };
-struct Health { int amount; };
+// 示例组件
+struct 位置 {
+  float x, y;
+};
+struct Button {
+  std::string text;
+};
+struct Character {
+  bool alive;
+};
+struct 健康值 {
+  int amount;
+};
 
-// Removes all entities who are children of
-// the current scene root.
-// (NOTE: should use defer_begin() / defer_end())
-void reset_scene(flecs::world& ecs) {
-    ecs.delete_with(flecs::ChildOf, ecs.entity<SceneRoot>());
+// 删除当前场景根级下的所有实体。
+// (注意：应使用 defer_begin() / defer_end())
+void reset_scene(flecs::world &ecs) {
+  ecs.delete_with(flecs::ChildOf, ecs.entity<SceneRoot>());
 }
 
-void menu_scene(flecs::iter& it, size_t, ActiveScene) {
-    std::cout << "\n>> ActiveScene has changed to `MenuScene`\n\n";
 
-    flecs::world ecs = it.world();
-    flecs::entity scene = ecs.component<SceneRoot>();
-    
-    reset_scene(ecs);
+void menu_scene(flecs::iter &it, size_t, ActiveScene) {
+  std::cout << "\n>> ActiveScene has changed to `MenuScene`\n\n";
 
-    // Creates a start menu button
-    // when we enter the menu scene.
-    ecs.entity("Start Button")
-        .set(Button{ "Play the Game!" })
-        .set(Position{ 50, 50 })
-        .child_of(scene);
+  flecs::world ecs = it.world();
+  flecs::entity scene = ecs.component<SceneRoot>();
 
-    ecs.set_pipeline(ecs.get<MenuScene>().pip);
+  reset_scene(ecs);
+
+  // 进入菜单场景时创建一个开始菜单按钮。
+  // when we enter the menu scene.
+  ecs.entity("Start Button")
+      .set(Button{"Play the Game!"})
+      .set(位置{50, 50})
+      .child_of(scene);
+
+  ecs.set_pipeline(ecs.get<MenuScene>().pip);
 }
 
-void game_scene(flecs::iter& it, size_t, ActiveScene) {
-    std::cout << "\n>> ActiveScene has changed to `GameScene`\n\n";
+void game_scene(flecs::iter &it, size_t, ActiveScene) {
+  std::cout << "\n>> ActiveScene has changed to `GameScene`\n\n";
 
-    flecs::world ecs = it.world();
-    flecs::entity scene = ecs.component<SceneRoot>();
-    
-    reset_scene(ecs);
+  flecs::world ecs = it.world();
+  flecs::entity scene = ecs.component<SceneRoot>();
 
-    // Creates a player character
-    // when we enter the game scene.
-    ecs.entity("Player")
-        .set(Character{ })
-        .set(Health{ 2 })
-        .set(Position{ 0, 0 })
-        .child_of(scene);
+  reset_scene(ecs);
 
-    ecs.set_pipeline(ecs.get<GameScene>().pip);
+  // 进入游戏场景时创建一个玩家角色。
+  // when we enter the game scene.
+  ecs.entity("Player")
+      .set(Character{})
+      .set(健康值{2})
+      .set(位置{0, 0})
+      .child_of(scene);
+
+  ecs.set_pipeline(ecs.get<GameScene>().pip);
 }
 
-void init_scenes(flecs::world& ecs) {
-    // Can only have one active scene
-    // in a game at a time.
-    ecs.component<ActiveScene>()
-        .add(flecs::Exclusive);
+void init_scenes(flecs::world &ecs) {
+  // 游戏中只能有一个活动场景。
+  // in a game at a time.
+  ecs.component<ActiveScene>().add(flecs::Exclusive);
 
-    // Each scene gets a pipeline that
-    // runs the associated systems plus
-    // all other scene-agnostic systems.
-    flecs::entity menu = ecs.pipeline()
-            .with(flecs::System)
-            .without<GameScene>() // Use "without()" of the other scenes
-                                  // so that we can run every system that
-                                  // doesn't have a scene attached to it.
-            .build();
+  // 每个场景都有一个 pipeline，它运行
+  // 与之关联的系统以及所有其他与场景无关的系统。
+  flecs::entity menu =
+      ecs.pipeline()
+          .with(flecs::System)
+          .without<GameScene>() // Use "without()" of the other scenes
+                                // so that we can run every system that
+                                // doesn't have a scene attached to it.
+          .build();
 
-    flecs::entity game = ecs.pipeline()
-            .with(flecs::System)
-            .without<MenuScene>()
-            .build();
+  flecs::entity game =
+      ecs.pipeline().with(flecs::System).without<MenuScene>().build();
 
-    // Set pipeline entities on the scenes
-    // to easily find them later with get().
-    ecs.set<MenuScene>({ menu });
-    ecs.set<GameScene>({ game });
+  // 在场景上设置 pipeline 实体，以便稍后使用 get() 容易找到它们。
+  // to easily find them later with get().
+  ecs.set<MenuScene>({menu});
+  ecs.set<GameScene>({game});
 
-    // Observer to call scene change logic for
-    // MenuScene when added to the ActiveScene.
-    ecs.observer<ActiveScene>("Scene Change to Menu")
-        .event(flecs::OnAdd)
-        .second<MenuScene>()
-        .each(menu_scene);
+  // 当 ActiveScene 添加 MenuScene 时调用场景更改逻辑的观察者。
+  // Observer to call scene change logic for
+  // MenuScene when added to the ActiveScene.
+  ecs.observer<ActiveScene>("Scene Change to Menu")
+      .event(flecs::OnAdd)
+      .second<MenuScene>()
+      .each(menu_scene);
 
-    // Observer to call scene change logic for
-    // GameScene when added to the ActiveScene.
-    ecs.observer<ActiveScene>("Scene Change to Game")
-        .event(flecs::OnAdd)
-        .second<GameScene>()
-        .each(game_scene);
+  // 当 ActiveScene 添加 GameScene 时调用场景更改逻辑的观察者。
+  // Observer to call scene change logic for
+  // GameScene when added to the ActiveScene.
+  ecs.observer<ActiveScene>("Scene Change to Game")
+      .event(flecs::OnAdd)
+      .second<GameScene>()
+      .each(game_scene);
 }
 
-void init_systems(flecs::world& ecs) {
-    // Will run every time regardless of the
-    // current scene we're in.
-    ecs.system<const Position>("Print Position")
-        .each([](flecs::entity e, const Position& p) {
-            // Prints out the position of the
-            // entity.
-            std::cout << e.name() << ": {" << p.x << ", " << p.y << "}\n";
-        });
+void init_systems(flecs::world &ecs) {
+  // 无论我们当前处于哪个场景，都会运行。
+  // Will run every time regardless of the
+  // current scene we're in.
+  ecs.system<const 位置>("Print Position")
+      .each([](flecs::entity e, const 位置 &p) {
+        // 打印实体的位置。
+        std::cout << e.name() << ": {" << p.x << ", " << p.y << "}\n";
+      });
 
-    // Will only run when the game scene is
-    // currently active.
-    ecs.system<Health>("Characters Lose Health")
-        .kind<GameScene>()
-        .each([](Health& h) {
-            // Prints out the character's health
-            // and then decrements it by one.
-            std::cout << h.amount << " health remaining\n";
-            h.amount--;
-        });
+  // 仅在游戏场景当前处于活动状态时运行。
+  // Will only run when the game scene is
+  // currently active.
+  ecs.system<健康值>("Characters Lose Health")
+      .kind<GameScene>()
+      .each([](健康值 &h) {
+        // 打印角色的健康值，然后将其减一。
+        std::cout << h.amount << " health remaining\n";
+        h.amount--;
+      });
 
-    // Will only run when the menu scene is
-    // currently active.
-    ecs.system<const Button>("Print Menu Button Text")
-        .kind<MenuScene>()
-        .each([](const Button& b) {
-            // Prints out the text of the menu
-            // button.
-            std::cout << "Button says \"" << b.text << "\"\n";
-        });
+  // 仅在菜单场景当前处于活动状态时运行。
+  // Will only run when the menu scene is
+  // currently active.
+  ecs.system<const Button>("Print Menu Button Text")
+      .kind<MenuScene>()
+      .each([](const Button &b) {
+        // 打印菜单按钮的文本。
+        std::cout << "Button says \"" << b.text << "\"\n";
+      });
 }
 
 int main(int, char *[]) {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    init_scenes(ecs);
-    init_systems(ecs);
+  init_scenes(ecs);
+  init_systems(ecs);
 
-    ecs.add<ActiveScene, MenuScene>();
-    ecs.progress();
+  ecs.add<ActiveScene, MenuScene>();
+  ecs.progress();
 
-    ecs.add<ActiveScene, GameScene>();
-    ecs.progress();
-    ecs.progress();
-    ecs.progress();
+  ecs.add<ActiveScene, GameScene>();
+  ecs.progress();
+  ecs.progress();
+  ecs.progress();
 
-    ecs.add<ActiveScene, MenuScene>();
-    ecs.progress();
+  ecs.add<ActiveScene, MenuScene>();
+  ecs.progress();
 
-    ecs.add<ActiveScene, GameScene>();
-    ecs.progress();
-    ecs.progress();
-    ecs.progress();
+  ecs.add<ActiveScene, GameScene>();
+  ecs.progress();
+  ecs.progress();
+  ecs.progress();
 
-    // Output
-    // >> ActiveScene has changed to `MenuScene`
+  // 输出
+  // >> ActiveScene has changed to `MenuScene`
 
-    // Start Button: {50, 50}
-    // Button says "Play the Game!"
+  // Start Button: {50, 50}
+  // Button says "Play the Game!"
 
-    // >> ActiveScene has changed to `GameScene`
+  // >> ActiveScene has changed to `GameScene`
 
-    // Player: {0, 0}
-    // 2 health remaining
-    // Player: {0, 0}
-    // 1 health remaining
-    // Player: {0, 0}
-    // 0 health remaining
+  // Player: {0, 0}
+  // 2 health remaining
+  // Player: {0, 0}
+  // 1 health remaining
+  // Player: {0, 0}
+  // 0 health remaining
 
-    // >> ActiveScene has changed to `MenuScene`
+  // >> ActiveScene has changed to `MenuScene`
 
-    // Start Button: {50, 50}
-    // Button says "Play the Game!"
+  // Start Button: {50, 50}
+  // Button says "Play the Game!"
 
-    // >> ActiveScene has changed to `GameScene`
+  // >> ActiveScene has changed to `GameScene`
 
-    // Player: {0, 0}
-    // 2 health remaining
-    // Player: {0, 0}
-    // 1 health remaining
-    // Player: {0, 0}
-    // 0 health remaining
+  // Player: {0, 0}
+  // 2 health remaining
+  // Player: {0, 0}
+  // 1 health remaining
+  // Player: {0, 0}
+  // 0 health remaining
 }
+

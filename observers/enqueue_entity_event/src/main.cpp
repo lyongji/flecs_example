@@ -1,60 +1,55 @@
 #include <enqueue_entity_event.h>
 #include <iostream>
 
-// This is the same example as entity_event, but instead of emit() the example
-// uses the enqueue() method. Whereas emit() invokes observers synchronously,
-// enqueue() adds the event to the command queue, which delays invoking 
-// observers until the next time the command queue is flushed.
+// 这与entity_event的示例相同，但此示例使用enqueue()方法而不是emit()方法。
+// 与emit()同步调用观察者不同，enqueue()将事件添加到命令队列，
+// 这会延迟调用观察者，直到下一次刷新命令队列时才会调用。
 
-// An event without payload
-struct Click { };
+// 一个没有负载的事件
+struct Click {};
 
-// An event with payload
+// 一个有负载的事件
 struct Resize {
-    double width, height;
+  double width, height;
 };
 
 int main(int, char *[]) {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    // Create a widget entity
-    flecs::entity widget = ecs.entity("MyWidget");
+  // 创建一个widget实体
+  flecs::entity widget = ecs.entity("MyWidget");
 
-    // Observe the Click event on the widget entity.
-    widget.observe<Click>([]() {
-        std::cout << "clicked!\n";
-    });
+  // 在widget实体上观察Click事件。
+  widget.observe<Click>([]() { std::cout << "clicked!\n"; });
 
-    // Observers can have an entity argument that holds the event source.
-    // This allows the same function to be reused for different entities.
-    widget.observe<Click>([](flecs::entity src) {
-        std::cout << "clicked on " << src.path() << "!\n";
-    });
+  // 观察者可以有一个实体参数，表示事件的来源。
+  // 这允许相同的函数在不同的实体上重用。
+  widget.observe<Click>([](flecs::entity src) {
+    std::cout << "clicked on " << src.path() << "!\n";
+  });
 
-    // Observe the Resize event. Events with payload are passed as arguments
-    // to the observer callback.
-    widget.observe([](Resize& p) {
-        std::cout << "resized to {" 
-                  << p.width << ", " << p.height << "}!\n"; 
-    });
+  // 观察Resize事件。有负载的事件会作为参数传递给观察者回调函数。
+  widget.observe([](Resize &p) {
+    std::cout << "resized to {" << p.width << ", " << p.height << "}!\n";
+  });
 
-    // We can only call enqueue events while the world is deferred mode.
-    ecs.defer_begin();
+  // 只有在世界处于延迟模式下时，才能调用enqueue事件。
+  ecs.defer_begin();
 
-    // Emit the Click event
-    widget.enqueue<Click>();
+  // 发出Click事件
+  widget.enqueue<Click>();
 
-    // Emit the Resize event
-    widget.enqueue<Resize>({100, 200});
+  // 发出Resize事件
+  widget.enqueue<Resize>({100, 200});
 
-    std::cout << "Events enqueued!\n";
+  std::cout << "Events enqueued!\n";
 
-    // Flushes the queue, and invokes the observer
-    ecs.defer_end();
+  // 刷新队列并调用观察者
+  ecs.defer_end();
 
-    // Output
-    //   Events enqueued!
-    //   clicked!
-    //   clicked on ::MyWidget!
-    //   resized to {100, 200}!
+  // 输出
+  //   Events enqueued!
+  //   clicked!
+  //   clicked on ::MyWidget!
+  //   resized to {100, 200}!
 }

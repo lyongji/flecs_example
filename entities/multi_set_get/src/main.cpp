@@ -1,39 +1,38 @@
-#include <multi_set_get.h>
 #include <iostream>
+#include <multi_set_get.h>
 
-/* This code shows how to get & set multiple components in a single command */
+/* 这个代码展示了如何在单个命令中获取和设置多个组件 */
 
-struct Position {
-    double x, y;
+struct 位置 {
+  double x, y;
 };
 
-struct Mass {
-    double value;
+struct 质量 {
+  double value;
 };
 
 int main(int, char *[]) {
-    flecs::world ecs;
+  flecs::world ecs;
 
-    // Create new entity, set Position and Mass component
-    flecs::entity e = ecs.entity()
-        .insert([](Position& p, Mass& m) {
-            p.x = 10;
-            p.y = 20;
-            m.value = 100;
-        });
+  // 创建新实体，设置 Position 和 Mass 组件
+  flecs::entity e = ecs.entity().insert([](位置 &p, 质量 &m) {
+    p.x = 10;
+    p.y = 20;
+    m.value = 100;
+  });
 
-    // Print values of Position and Mass component
-    bool found = e.get([](const Position& p, const Mass& m) {
-        std::cout << "Position: {" << p.x << ", " << p.y << "}\n"
-                  << "Mass: {" << m.value << "}\n";
-    });
+  // 打印 Position 和 Mass 组件的值
+  bool found = e.get([](const 位置 &p, const 质量 &m) {
+    std::cout << "位置: {" << p.x << ", " << p.y << "}\n"
+              << "质量: {" << m.value << "}\n";
+  });
 
-    std::cout << "Components found: " << (found ? "true" : "false") << "\n";
+  std::cout << "寻找组件: " << (found ? "true" : "false") << "\n";
 
-    // Output:
-    //  Position: {10, 20}
-    //  Mass: {100}
-    //  Components found: true
-    
-    return 0;
+  // 输出:
+  //  Position: {10, 20}
+  //  Mass: {100}
+  //  Components found: true
+
+  return 0;
 }

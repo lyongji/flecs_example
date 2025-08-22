@@ -9,7 +9,7 @@ struct Gravity {
 };
 
 // Entity component
-struct Velocity {
+struct 速度 {
   double x;
   double y;
 };
@@ -24,15 +24,14 @@ int main(int, char *[]) {
   world.set<Gravity>({9.81});
 
   // Set Velocity
-  world.entity("e1").set<Velocity>({0, 0});
-  world.entity("e2").set<Velocity>({0, 1});
-  world.entity("e3").set<Velocity>({0, 2});
+  world.entity("e1").set<速度>({0, 0});
+  world.entity("e2").set<速度>({0, 1});
+  world.entity("e3").set<速度>({0, 2});
 
   // Create query that matches Gravity singleton
-  flecs::query<Velocity, const Gravity> q =
-      world.query<Velocity, const Gravity>();
+  flecs::query<速度, const Gravity> q = world.query<速度, const Gravity>();
 
-  q.each([](flecs::entity e, Velocity &v, const Gravity &g) {
+  q.each([](flecs::entity e, 速度 &v, const Gravity &g) {
     v.y += g.value;
     std::cout << e.path() << " velocity is {" << v.x << ", " << v.y << "}"
               << std::endl;
